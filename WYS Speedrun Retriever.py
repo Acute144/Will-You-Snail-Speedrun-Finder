@@ -107,7 +107,7 @@ def get_values():
     else:
         try: 
             userInput = int(userInput)
-            values = [1, userInput]
+            values = [userInput, userInput]
         except ValueError:
             msgbox("A number was not entered, defaulting to WR")
             values = [1, 1]
