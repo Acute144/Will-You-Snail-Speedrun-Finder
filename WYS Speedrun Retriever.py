@@ -4,13 +4,14 @@ from easygui import *
 api = srcomapi.SpeedrunCom()
 wys = api.search(srcomapi.datatypes.Game, {"name": "will you snail?"})[0]
 cates = wys.categories
+levels = wys.levels
 
 def runLoop(string, values=[1,1]):
     priStr = "Run(s): \n \n"
     ldboard = dt.Leaderboard(api, data=api.get(string))
     for i in range(int(values[0])-1, int(values[1])):
         currentRun = ldboard.runs[i]["run"]
-        priStr += str(datetime.timedelta(seconds=currentRun.times["primary_t"]))[:-3] + " by " + str(currentRun.players[0].name) +  "\n"
+        priStr += str(i+1) + ". " + str(datetime.timedelta(seconds=currentRun.times["primary_t"]))[:-3] + " by " + str(currentRun.players[0].name) +  "\n"
     msgbox(priStr)
     menu()
 
@@ -34,6 +35,41 @@ def findOther():
         diff = 0
 
     cateString = "leaderboards/{}/category/{}?var-{}={}".format(wys.id, cate.id, difficultyVar.id, list(difficultyVar.data["values"]["choices"].keys())[diff])
+    values = get_values()
+
+    try:
+        dt.Leaderboard(api, data=api.get(cateString)).runs[int(values[-1])-1]
+        runLoop(cateString, values)
+    except IndexError:
+        msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+    except ValueError:
+        msgbox("A number was not entered for a value, defaulting to WR")
+        runLoop(cateString, [1,1])
+
+def findLevels():
+
+    diffList = ["IE", "EE", "VE", "Easy"]
+
+    diffInput = enterbox("Input the runs difficulty: ")
+    for x in diffList:
+        if diffInput.lower() == x.lower():
+            diff = diffList.index(x)
+            break
+    else:
+        msgbox("An invalid difficulty was entered, defaulting to Infinitely Easy")
+        diff = 0
+    
+    difficultyVar = cates[diff+4]
+
+    levelInput = indexbox("Select the runs chapter", choices=["A", "B", "C", "D", "E"])
+    if levelInput == None:
+        findLevels()
+    else:
+        level = levels[levelInput]  
+
+    cateVar = difficultyVar.variables[0]
+
+    cateString = "leaderboards/{}/level/{}/{}?var-{}={}".format(wys.id, level.id, difficultyVar.id, cateVar.id, list(cateVar.data["values"]["choices"].keys())[0])
     values = get_values()
 
     try:
@@ -115,7 +151,7 @@ def get_values():
     return values
 
 def menu():
-    choice = indexbox("Select an option", "Menu", ["100%", "Bosses", "Other"])
+    choice = indexbox("Select an option", "Menu", ["100%", "Bosses", "Levels", "Other"])
 
     if choice == None:
         quit()
@@ -124,6 +160,8 @@ def menu():
     elif choice == 1:
         findBoss()
     elif choice == 2:
+        findLevels()
+    elif choice == 3:
         findOther()
 
-menu()   
+menu()  
