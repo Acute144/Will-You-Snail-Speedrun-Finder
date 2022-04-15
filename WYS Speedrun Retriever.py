@@ -2,23 +2,75 @@ import srcomapi, srcomapi.datatypes as dt
 import datetime
 from easygui import *
 api = srcomapi.SpeedrunCom()
-wys = api.search(srcomapi.datatypes.Game, {"name": "will you snail?"})[0]
-cates = wys.categories
-levels = wys.levels
 
-def runLoop(string, values=[1,1]):
+base = True
+
+def baseMenu():
+    choice = indexbox("Select a category", "Menu", ["100%", "Bosses", "Levels", "Other"])
+
+    if choice == None:
+        quit()
+    elif choice == 0:
+        find100()
+    elif choice == 1:
+        findBoss()
+    elif choice == 2:
+        findLevels()
+    elif choice == 3:
+        findOther()
+
+def extMenu():
+    choice = indexbox("Select a category", "Menu", ["Death%", "I am frustrated.", "Other"])
+
+    if choice == None:
+        quit()
+    elif choice == 0:
+        findDeath()
+    elif choice == 1:
+        findFrus()
+    elif choice == 2:
+        findOtherExten()
+
+def runLoop(string, values=[1,1], mult=False):
     priStr = "Run(s): \n \n"
     ldboard = dt.Leaderboard(api, data=api.get(string))
     for i in range(int(values[0])-1, int(values[1])):
         currentRun = ldboard.runs[i]["run"]
-        priStr += str(i+1) + ". " + str(datetime.timedelta(seconds=currentRun.times["primary_t"]))[:-3] + " by " + str(currentRun.players[0].name) +  "\n"
+        if mult == False:
+            priStr += str(i+1) + ". " + str(datetime.timedelta(seconds=currentRun.times["primary_t"]))[:-3] + " by " + str(currentRun.players[0].name) +  "\n"
+        else:
+            players = ""
+            for player in currentRun.players:
+                players += str(player.name) + " and "
+            priStr += str(i+1) + ". " + str(datetime.timedelta(seconds=currentRun.times["primary_t"]))[:-3] + " by " + players[:-5] +  "\n"
     msgbox(priStr)
-    menu()
+    if base:
+        baseMenu()
+    else:
+        extMenu()
+
+def get_values():
+    values = []
+    userInput = enterbox("Input the run(s) to find: ")
+    if "-" in userInput:
+        values = userInput.split("-")
+        if len(values) != 2:
+            msgbox("An invalid number of runs was entered, defaulting to WR")
+            values = [1, 1]
+    else:
+        try: 
+            userInput = int(userInput)
+            values = [userInput, userInput]
+        except ValueError:
+            msgbox("A number was not entered, defaulting to WR")
+            values = [1, 1]
+
+    return values
 
 def findOther():
     cateInput = indexbox("What category?", choices=["Any% NMG", "Any%", "Alt Ending", "All Collectibles", "No Shortcuts"])
     if cateInput == None:
-        menu()
+        baseMenu()
     elif cateInput == 4:
         cateInput = 10
     cate = cates[cateInput]
@@ -131,37 +183,89 @@ def findBoss():
     except ValueError:
         msgbox("A number was not entered for a value")
 
+def findOtherExten():
 
-def get_values():
-    values = []
-    userInput = enterbox("Input the run(s) to find: ")
-    if "-" in userInput:
-        values = userInput.split("-")
-        if len(values) != 2:
-            msgbox("An invalid number of runs was entered, defaulting to WR")
-            values = [1, 1]
+    cateInput = indexbox("What category?", choices=["Chapter Relay", "Double-Time", "Block Massacre", "Minimum Kills"])
+    if cateInput == None:
+        extMenu()
+    elif cateInput == 1:
+        cateInput = 2
+    elif cateInput == 2:
+        cateInput = 4
+    elif cateInput == 3:
+        cateInput = 5
+    cate = cates[cateInput]
+
+    difficultyVar = cate.variables[0]
+    diffList = ["IE", "EE", "VE", "Easy"]
+
+    diffInput = enterbox("Input the runs difficulty: ")
+    for x in diffList:
+        if diffInput.lower() == x.lower():
+            diff = diffList.index(x)
+            break
     else:
-        try: 
-            userInput = int(userInput)
-            values = [userInput, userInput]
-        except ValueError:
-            msgbox("A number was not entered, defaulting to WR")
-            values = [1, 1]
+        msgbox("An invalid difficulty was entered, defaulting to Infinitely Easy")
+        diff = 0
 
-    return values
+    cateString = "leaderboards/{}/category/{}?var-{}={}".format(wys.id, cate.id, difficultyVar.id, list(difficultyVar.data["values"]["choices"].keys())[diff])
+    values = get_values()
 
-def menu():
-    choice = indexbox("Select an option", "Menu", ["100%", "Bosses", "Levels", "Other"])
+    try:
+        dt.Leaderboard(api, data=api.get(cateString)).runs[int(values[-1])-1]
+        runLoop(cateString, values, True)
+    except IndexError:
+        msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+    except ValueError:
+        msgbox("A number was not entered for a value, defaulting to WR")
+        runLoop(cateString, [1,1], True)
 
-    if choice == None:
-        quit()
-    elif choice == 0:
-        find100()
-    elif choice == 1:
-        findBoss()
-    elif choice == 2:
-        findLevels()
-    elif choice == 3:
-        findOther()
+def findDeath():
+    cate = cates[3]
+    cateString = "leaderboards/{}/category/{}".format(wys.id, cate.id)
+    values = get_values()
 
-menu()  
+    try:
+        dt.Leaderboard(api, data=api.get(cateString)).runs[int(values[-1])-1]
+        runLoop(cateString, values)
+    except IndexError:
+        msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+    except ValueError:
+        msgbox("A number was not entered for a value, defaulting to WR")
+        runLoop(cateString, [1,1])
+
+def findFrus():
+    cate = cates[1]
+    levelVar = cate.variables[0]
+    levelInput = indexbox("Select which level", choices=["2", "25", "50", "75", "100", "1000"])
+    if levelInput == None:
+        extMenu()
+
+    cateString = "leaderboards/{}/category/{}?var-{}={}".format(wys.id, cate.id, levelVar.id, list(levelVar.data["values"]["choices"].keys())[levelInput])
+    values = get_values()
+
+    try:
+        dt.Leaderboard(api, data=api.get(cateString)).runs[int(values[-1])-1]
+        runLoop(cateString, values)
+    except IndexError:
+        msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+    except ValueError:
+        msgbox("A number was not entered for a value, defaulting to WR")
+        runLoop(cateString, [1,1])
+
+main = indexbox("Select which leaderboard", "Main Menu", ["Full Game + Levels", "Category Extensions"])
+if main == None:
+    quit()
+if main == 0:
+    wys = api.search(srcomapi.datatypes.Game, {"name": "will you snail?"})[0]
+    cates = wys.categories
+    levels = wys.levels
+
+    baseMenu()
+
+elif main == 1:
+    wys = api.search(srcomapi.datatypes.Game, {"name": "will you snail?"})[3]
+    cates = wys.categories
+    base = False
+
+    extMenu()
