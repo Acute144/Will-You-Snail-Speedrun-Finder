@@ -7,8 +7,9 @@ cates = wys.categories
 
 def runLoop(string, values=[1,1]):
     priStr = "Run(s): \n \n"
+    ldboard = dt.Leaderboard(api, data=api.get(string))
     for i in range(int(values[0])-1, int(values[1])):
-        currentRun = dt.Leaderboard(api, data=api.get(string)).runs[i]["run"]
+        currentRun = ldboard.runs[i]["run"]
         priStr += str(datetime.timedelta(seconds=currentRun.times["primary_t"]))[:-3] + " by " + str(currentRun.players[0].name) +  "\n"
     msgbox(priStr)
     menu()
