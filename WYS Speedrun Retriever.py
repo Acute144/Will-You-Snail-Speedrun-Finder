@@ -6,7 +6,7 @@ api = srcomapi.SpeedrunCom()
 base = True
 
 def baseMenu():
-    choice = indexbox("Select a category", "Menu", ["100%", "Bosses", "Levels", "Other"])
+    choice = indexbox("Select a category", "Menu", ["100%", "Bosses", "Chapters", "Other"])
 
     if choice == None:
         quit()
@@ -20,7 +20,7 @@ def baseMenu():
         findOther()
 
 def extMenu():
-    choice = indexbox("Select a category", "Menu", ["Death%", "I am frustrated.", "Other"])
+    choice = indexbox("Select a category", "Menu", ["Death%", "I am frustrated.", "Levels", "Other"])
 
     if choice == None:
         quit()
@@ -29,6 +29,8 @@ def extMenu():
     elif choice == 1:
         findFrus()
     elif choice == 2:
+        findExLevels()
+    elif choice == 3:
         findOtherExten()
 
 def runLoop(string, values=[1,1], mult=False):
@@ -94,34 +96,40 @@ def findOther():
         runLoop(cateString, values)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base: baseMenu()
+        else: extMenu()
     except ValueError:
         msgbox("A number was not entered for a value, defaulting to WR")
         runLoop(cateString, [1,1])
 
 def findLevels():
-
     diffList = ["IE", "EE", "VE", "Easy"]
-
-    diffInput = enterbox("Input the runs difficulty: ")
+    diffInput = enterbox("Input the difficulty: ")
     for x in diffList:
         if diffInput.lower() == x.lower():
             diff = diffList.index(x)
             break
     else:
-        msgbox("An invalid difficulty was entered, defaulting to Infinitely Easy")
+        msgbox("Difficulty could not be found, defaulting to Infinitely Easy")
         diff = 0
-    
+
     difficultyVar = cates[diff+4]
+    aop = difficultyVar.variables[0]
 
-    levelInput = indexbox("Select the runs chapter", choices=["A", "B", "C", "D", "E"])
-    if levelInput == None:
-        findLevels()
+    levelInput = enterbox("Input the chapter name: ")
+    for x in levels:
+        if levelInput.lower() == x.name.lower():
+            level = x
+            break
     else:
-        level = levels[levelInput]  
+        msgbox("Chapter could not be found, defaulting to Chapter A")
+        level = levels[0]
 
-    cateVar = difficultyVar.variables[0]
+    aopInput = indexbox("Choose the category?", choices=["Any%", "All Puzzles"])
+    if aopInput == None:
+        baseMenu()
 
-    cateString = "leaderboards/{}/level/{}/{}?var-{}={}".format(wys.id, level.id, difficultyVar.id, cateVar.id, list(cateVar.data["values"]["choices"].keys())[0])
+    cateString = "leaderboards/{}/level/{}/{}?var-{}={}".format(wys.id, level.id, difficultyVar.id, aop.id, list(aop.data["values"]["choices"].keys())[aopInput])
     values = get_values()
 
     try:
@@ -129,6 +137,44 @@ def findLevels():
         runLoop(cateString, values)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base:
+            baseMenu()
+        else: extMenu()
+    except ValueError:
+        msgbox("A number was not entered for a value, defaulting to WR")
+        runLoop(cateString, [1,1])
+
+
+def findExLevels():
+
+    diffInput = indexbox("Select the runs category", choices=["Any%", "Pump Broken", "Exploration Point"])
+    if diffInput == None:
+        baseMenu()
+    else:
+        diff = diffInput
+    
+    difficultyVar = cates[diff+6]
+
+    levelInput = enterbox("Input the level: ")
+    for x in levels:
+        if levelInput.lower() == x.name.lower():
+            level = x
+            break
+    else:
+        msgbox("Level could not be found, defaulting to A01")
+        level = levels[0]
+
+    cateString = "leaderboards/{}/level/{}/{}".format(wys.id, level.id, difficultyVar.id)
+    values = get_values()
+
+    try:
+        dt.Leaderboard(api, data=api.get(cateString)).runs[int(values[-1])-1]
+        runLoop(cateString, values)
+    except IndexError:
+        msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base:
+            baseMenu()
+        else: extMenu()
     except ValueError:
         msgbox("A number was not entered for a value, defaulting to WR")
         runLoop(cateString, [1,1])
@@ -143,6 +189,9 @@ def find100():
         runLoop(cateString, values)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base:
+            baseMenu()
+        else: extMenu()
     except ValueError:
         msgbox("A number was not entered for a value, defaulting to WR")
         runLoop(cateString, [1,1])
@@ -180,8 +229,11 @@ def findBoss():
         runLoop(cateString, values)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base: baseMenu()
+        else: extMenu()
     except ValueError:
-        msgbox("A number was not entered for a value")
+        msgbox("A number was not entered for a value, defaulting to WR")
+        runLoop(cateString, [1,1])
 
 def findOtherExten():
 
@@ -216,6 +268,8 @@ def findOtherExten():
         runLoop(cateString, values, True)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base: baseMenu()
+        else: extMenu()
     except ValueError:
         msgbox("A number was not entered for a value, defaulting to WR")
         runLoop(cateString, [1,1], True)
@@ -230,6 +284,8 @@ def findDeath():
         runLoop(cateString, values)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base: baseMenu()
+        else: extMenu()
     except ValueError:
         msgbox("A number was not entered for a value, defaulting to WR")
         runLoop(cateString, [1,1])
@@ -249,23 +305,24 @@ def findFrus():
         runLoop(cateString, values)
     except IndexError:
         msgbox("There is no run number " + str(values[-1]) + ", please enter a valid run")
+        if base: baseMenu()
+        else: extMenu()
     except ValueError:
         msgbox("A number was not entered for a value, defaulting to WR")
         runLoop(cateString, [1,1])
 
-main = indexbox("Select which leaderboard", "Main Menu", ["Full Game + Levels", "Category Extensions"])
+main = indexbox("Select which leaderboard", "Main Menu", ["Full Game + Chapters", "Category Extensions + Levels"])
 if main == None:
     quit()
 if main == 0:
     wys = api.search(srcomapi.datatypes.Game, {"name": "will you snail?"})[0]
     cates = wys.categories
     levels = wys.levels
-
     baseMenu()
 
 elif main == 1:
     wys = api.search(srcomapi.datatypes.Game, {"name": "will you snail?"})[3]
     cates = wys.categories
+    levels = wys.levels
     base = False
-
     extMenu()
